@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-
+import 'screens/settings_screen.dart';
+import 'screens/calendar_screen.dart';
+import 'screens/statistics_screen.dart';
 void main() {
   runApp(const MainApp());
 }
@@ -81,90 +83,6 @@ class _MainScreenState extends State<MainScreen> {
     return IconButton(
       onPressed: () => print('Поиск'),
       icon: Icon(Icons.search),
-    );
-  }
-}
-
-
-class CalendarScreen extends StatefulWidget {
-  @override
-  State<CalendarScreen> createState() => _CalendarScreenState();
-}
-//ЭКРАН КАЛЕНДАРЯ
-class _CalendarScreenState extends State<CalendarScreen> {
-
-  DateTime _selectedDate = DateTime.now();
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Padding(
-        padding: EdgeInsets.all(16),
-        child: CalendarDatePicker(
-          initialDate: DateTime.now(),
-          firstDate: DateTime(2000),
-          lastDate: DateTime(2100),
-          onDateChanged: (DateTime value) {
-            setState(() {
-              _selectedDate = value;
-            });
-          },
-        ),
-      ),
-    );
-  }
-}
-//ЭКРАН СТАТИСТИКИ
-class StatisticScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(  // ← Убрали AppBar и добавили Center
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.bar_chart, size: 64, color: Colors.green),
-            SizedBox(height: 20),
-            Text('Статистика', style: TextStyle(fontSize: 24)),
-            SizedBox(height: 10),
-            Text('Графики и статистика будут здесь'),
-          ],
-        ),
-      ),
-    );
-  }
-}
-//ЭКРАН НАСТРОЕК
-class SettingScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: EdgeInsets.all(16),
-      children: [
-        ListTile(
-          leading: Icon(Icons.person),
-          title: Text('Профиль'),
-          subtitle: Text('Настройки профиля'),
-          onTap: () => null,//TODO сделать реализацию настроее профиля
-        ),
-        ListTile(
-          leading: Icon(Icons.notifications),
-          title: Text('Уведомления'),
-          subtitle: Text('Настройки уведомлений'),
-          onTap: () => null,
-        ),
-        ListTile(
-          leading: Icon(Icons.color_lens),
-          title: Text('Тема'),
-          subtitle: Text('Смена темы приложения'),
-          onTap: () => null,
-        ),
-        ListTile(
-          leading: Icon(Icons.help),
-          title: Text('Помощь'),
-          subtitle: Text('Часто задаваемые вопросы'),
-          onTap: () => null,
-        ),
-      ],
     );
   }
 }
