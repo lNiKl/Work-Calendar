@@ -1,60 +1,38 @@
 import 'package:flutter/material.dart';
-import '../widgets/currency_selection_dialog.dart';
-import '../services/work_day_repository.dart';
-import '../services/currency_service.dart';
-import '../models/currency.dart';
 
-class StatisticScreen extends StatefulWidget {
-  const StatisticScreen({super.key});
+class StatisticsScreen extends StatefulWidget {
+  const StatisticsScreen({super.key});
 
   @override
-  State<StatisticScreen> createState() => _StatisticScreenState();
+  State<StatisticsScreen> createState() => _StatisticsScreenState();
 }
 
-class _StatisticScreenState extends State<StatisticScreen> {
-  late final WorkDayRepository _repository;
-  late final CurrencyService _currencyService;
-  late DateTimeRange _selectedPeriod;
+class _StatisticsScreenState extends State<StatisticsScreen> {
+  DateTimeRange _selectedPeriod = DateTimeRange(
+    start: DateTime(DateTime.now().year, DateTime.now().month, 1),
+    end: DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
+  );
 
-  double _totalEarnings = 0.0;
-  int _totalHours = 0;
-  int _totalShifts = 0;
-  String _selectedCurrency = 'RUB';
-  Map<String, Currency> _currencies = {};
-  double _currentRate = 1.0;
+  double _customEarnings = 0.0; // Пользовательский ввод заработка
+  final TextEditingController _earningsController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _repository = WorkDayRepository();
-    _currencyService = CurrencyService();
-    _selectedPeriod = _repository.getStatsPeriod();
-    _loadCurrencyData();
+    _earningsController.addListener(_updateEarnings);
   }
 
-  Future<void> _loadCurrencyData() async {
-    _selectedCurrency = _repository.getSelectedCurrency();
-    _currencies = await _currencyService.getCurrencies();
-    _currentRate = _currencies[_selectedCurrency]?.rateToRUB ?? 1.0;
-    _calculateStatistics();
+  @override
+  void dispose() {
+    _earningsController.dispose();
+    super.dispose();
   }
 
-  Future<void> _selectPeriod(BuildContext context) async {
-    final DateTimeRange? picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      currentDate: DateTime.now(),
-      initialDateRange: _selectedPeriod,
-    );
-
-    if (picked != null) {
-      setState(() {
-        _selectedPeriod = picked;
-      });
-      _repository.saveStatsPeriod(picked);
-      _calculateStatistics();
-    }
+  void _updateEarnings() {
+    final value = double.tryParse(_earningsController.text) ?? 0.0;
+    setState(() {
+      _customEarnings = value;
+    });
   }
 
   @override
@@ -68,6 +46,8 @@ class _StatisticScreenState extends State<StatisticScreen> {
           _buildHoursCard(),
           const SizedBox(height: 16),
           _buildShiftsCard(),
+          const SizedBox(height: 16),
+          _buildCustomInputCard(), // Добавляем карточку для ввода
         ],
       ),
     );
@@ -90,25 +70,16 @@ class _StatisticScreenState extends State<StatisticScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.currency_exchange, size: 20),
-                      onPressed: _showCurrencyDialog,
-                      tooltip: 'Выбрать валюту',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.calendar_today, size: 20),
-                      onPressed: () => _selectPeriod(context),
-                      tooltip: 'Выбрать период',
-                    ),
-                  ],
+                IconButton(
+                  icon: const Icon(Icons.calendar_today, size: 20),
+                  onPressed: () => _selectPeriod(context),
+                  tooltip: 'Выбрать период',
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              _formatEarnings(_totalEarnings),
+              '${_customEarnings.toStringAsFixed(2)} ₽',
               style: const TextStyle(
                 fontSize: 24,
                 color: Colors.green,
@@ -121,14 +92,6 @@ class _StatisticScreenState extends State<StatisticScreen> {
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Курс: 1 ${_currencies[_selectedCurrency]?.symbol ?? '₽'} = ${_currentRate.toStringAsFixed(2)} ₽',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 12,
               ),
             ),
           ],
@@ -152,9 +115,9 @@ class _StatisticScreenState extends State<StatisticScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              '${_totalHours}ч',
-              style: const TextStyle(
+            const Text(
+              '0ч',
+              style: TextStyle(
                 fontSize: 24,
                 color: Colors.blue,
                 fontWeight: FontWeight.bold,
@@ -181,9 +144,9 @@ class _StatisticScreenState extends State<StatisticScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              '$_totalShifts смен',
-              style: const TextStyle(
+            const Text(
+              '0 смен',
+              style: TextStyle(
                 fontSize: 24,
                 color: Colors.orange,
                 fontWeight: FontWeight.bold,
@@ -195,46 +158,87 @@ class _StatisticScreenState extends State<StatisticScreen> {
     );
   }
 
+  Widget _buildCustomInputCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Тестовый ввод данных',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _earningsController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Введите сумму заработка (₽)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.attach_money),
+                suffixIcon: Icon(Icons.edit),
+              ),
+              onChanged: (value) {
+                // Обновление уже через listener
+              },
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      final value = double.tryParse(_earningsController.text) ?? 0.0;
+                      setState(() {
+                        _customEarnings = value * 2; // Простая бизнес-логика: удвоение
+                      });
+                    },
+                    icon: const Icon(Icons.double_arrow),
+                    label: const Text('Удвоить'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      _earningsController.clear();
+                      setState(() {
+                        _customEarnings = 0.0;
+                      });
+                    },
+                    icon: const Icon(Icons.clear),
+                    label: const Text('Сбросить'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   String _formatDate(DateTime date) {
     return '${date.day}.${date.month}.${date.year}';
   }
 
-  String _formatEarnings(double amountInRUB) {
-    final currency = _currencies[_selectedCurrency];
-    if (currency != null) {
-      return currency.format(amountInRUB / _currentRate);
-    }
-    return '${amountInRUB.toStringAsFixed(2)} ₽';
-  }
-
-  void _calculateStatistics() {
-    final workDays = _repository.getAllWorkDays();
-    final filteredDays = workDays.where((day) =>
-    day.date.isAfter(_selectedPeriod.start.subtract(const Duration(days: 1))) &&
-        day.date.isBefore(_selectedPeriod.end.add(const Duration(days: 1)))
-    ).toList();
-
-    setState(() {
-      _totalEarnings = filteredDays.fold(0.0, (sum, day) => sum + day.earnings);
-      _totalHours = filteredDays.fold(0, (sum, day) => sum + day.hours.toInt());
-      _totalShifts = filteredDays.length;
-    });
-  }
-
-  void _showCurrencyDialog() {
-    showDialog(
+  Future<void> _selectPeriod(BuildContext context) async {
+    final DateTimeRange? picked = await showDateRangePicker(
       context: context,
-      builder: (context) => CurrencySelectionDialog(
-        currencies: _currencies,
-        selectedCurrency: _selectedCurrency,
-        onCurrencySelected: (currencyCode) {
-          _repository.saveSelectedCurrency(currencyCode);
-          setState(() {
-            _selectedCurrency = currencyCode;
-            _currentRate = _currencies[currencyCode]?.rateToRUB ?? 1.0;
-          });
-        },
-      ),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      currentDate: DateTime.now(),
+      initialDateRange: _selectedPeriod,
     );
+
+    if (picked != null) {
+      setState(() {
+        _selectedPeriod = picked;
+      });
+    }
   }
 }
